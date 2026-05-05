@@ -53,8 +53,8 @@ contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes, Ownable {
         liquidityPool = _liquidityPool;
 
         // Mint tokens based on the percentages defined above
-        _mint(_vestingContract, (MAX_SUPPLY * TEAM_BPS)      / 10_000); 
-        _mint(_treasury, (MAX_SUPPLY * TREASURY_BPS)  / 10_000); 
+        _mint(_vestingContract, (MAX_SUPPLY * TEAM_BPS) / 10_000); 
+        _mint(_treasury, (MAX_SUPPLY * TREASURY_BPS) / 10_000); 
         _mint(_communityAirdrop, (MAX_SUPPLY * COMMUNITY_BPS) / 10_000); 
         _mint(_liquidityPool, (MAX_SUPPLY * LIQUIDITY_BPS) / 10_000); 
 

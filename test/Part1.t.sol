@@ -56,7 +56,7 @@ contract Part1Test is Test {
         vm.stopPrank();
     }
 
-    // --- Governance Token Tests ---
+    //  Governance Token Tests 
 
     // Check if everyone got the right amount of tokens at the start
     function test_01_InitialDistribution() public view {
@@ -179,7 +179,7 @@ contract Part1Test is Test {
         token.permit(aliceSigner, bob, 1e18, deadline, v, r, s);
     }
 
-    // --- Token Vesting Tests ---
+    //  Token Vesting Tests 
 
     // Helper function to set up a quick schedule for Alice
     function _createAliceSchedule()
