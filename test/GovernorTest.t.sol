@@ -32,7 +32,9 @@ contract GovernorTest is Test {
     function setUp() public {
         vm.startPrank(deployer);
 
-        token = new GovernanceToken(deployer, makeAddr("treasuryPlaceholder"), makeAddr("community"), makeAddr("liquidity"));
+        token = new GovernanceToken(
+            deployer, makeAddr("treasuryPlaceholder"), makeAddr("community"), makeAddr("liquidity")
+        );
 
         address[] memory empty = new address[](0);
         timelock = new TimelockController(TIMELOCK_DELAY, empty, empty, deployer);
@@ -57,17 +59,22 @@ contract GovernorTest is Test {
 
         vm.deal(address(treasury), 10 ether);
 
-        vm.prank(alice); token.delegate(alice);
-        vm.prank(bob);   token.delegate(bob);
-        vm.prank(carol); token.delegate(carol);
+        vm.prank(alice);
+        token.delegate(alice);
+        vm.prank(bob);
+        token.delegate(bob);
+        vm.prank(carol);
+        token.delegate(carol);
 
         vm.roll(block.number + 1);
     }
 
-    //  HELPERS 
+    //  HELPERS
 
     function _buildBoxProposal(uint256 value, string memory desc)
-        internal view returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
+        internal
+        view
+        returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
     {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -78,7 +85,9 @@ contract GovernorTest is Test {
     }
 
     function _buildFeeProposal(uint256 fee, string memory desc)
-        internal view returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
+        internal
+        view
+        returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
     {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -89,7 +98,9 @@ contract GovernorTest is Test {
     }
 
     function _buildTransferProposal(address to, uint256 amount, string memory desc)
-        internal view returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
+        internal
+        view
+        returns (address[] memory, uint256[] memory, bytes[] memory, string memory)
     {
         address[] memory targets = new address[](1);
         uint256[] memory values = new uint256[](1);
@@ -99,7 +110,14 @@ contract GovernorTest is Test {
         return (targets, values, calldatas, desc);
     }
 
-    function _runFullLifecycle(address proposer, address voter, address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory desc) internal {
+    function _runFullLifecycle(
+        address proposer,
+        address voter,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory desc
+    ) internal {
         vm.prank(proposer);
         uint256 pid = governor.propose(targets, values, calldatas, desc);
 
@@ -116,7 +134,7 @@ contract GovernorTest is Test {
         governor.execute(targets, values, calldatas, descHash);
     }
 
-    //  TESTS (13 тестов) 
+    //  TESTS (13 тестов)
 
     function test_InitialParameters() public view {
         assertEq(governor.votingDelay(), VOTING_DELAY);
@@ -146,7 +164,8 @@ contract GovernorTest is Test {
     }
 
     function test_GovernanceUpdatesBoxValue() public {
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildBoxProposal(42, "Update Box");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildBoxProposal(42, "Update Box");
         _runFullLifecycle(alice, alice, t, v, c, d);
         assertEq(box.retrieve(), 42);
     }
@@ -155,14 +174,16 @@ contract GovernorTest is Test {
         uint256 amount = 1_000_000e18;
         uint256 before = token.balanceOf(recipient);
 
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildTransferProposal(recipient, amount, "Treasury transfer");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildTransferProposal(recipient, amount, "Treasury transfer");
         _runFullLifecycle(alice, alice, t, v, c, d);
 
         assertEq(token.balanceOf(recipient), before + amount);
     }
 
     function test_ChangeFeeParameter() public {
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildFeeProposal(250, "Change fee");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildFeeProposal(250, "Change fee");
         _runFullLifecycle(alice, alice, t, v, c, d);
         assertEq(box.feePercentage(), 250);
     }
@@ -176,7 +197,8 @@ contract GovernorTest is Test {
         token.delegate(small);
         vm.roll(block.number + 1);
 
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildBoxProposal(99, "Quorum fail");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildBoxProposal(99, "Quorum fail");
         vm.prank(small);
         uint256 pid = governor.propose(t, v, c, d);
 
@@ -195,14 +217,16 @@ contract GovernorTest is Test {
         vm.prank(poor);
         token.delegate(poor);
 
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildBoxProposal(1, "Below threshold");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildBoxProposal(1, "Below threshold");
         vm.prank(poor);
         vm.expectRevert();
         governor.propose(t, v, c, d);
     }
 
     function test_TimelockExecutionEnforcement() public {
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildBoxProposal(100, "Timelock test");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildBoxProposal(100, "Timelock test");
         vm.prank(alice);
         uint256 pid = governor.propose(t, v, c, d);
 
@@ -220,7 +244,8 @@ contract GovernorTest is Test {
     }
 
     function test_ProposalStateTransitions() public {
-        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) = _buildBoxProposal(777, "State test");
+        (address[] memory t, uint256[] memory v, bytes[] memory c, string memory d) =
+            _buildBoxProposal(777, "State test");
         vm.prank(alice);
         uint256 pid = governor.propose(t, v, c, d);
 

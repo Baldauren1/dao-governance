@@ -58,7 +58,7 @@ contract Deploy is Script {
         // Grant Governor the ability to propose and cancel
         timelock.grantRole(PROPOSER_ROLE, address(governor));
         timelock.grantRole(CANCELLER_ROLE, address(governor));
-        
+
         // Setting EXECUTOR_ROLE to address(0) allows anyone to execute successful proposals
         timelock.grantRole(EXECUTOR_ROLE, address(0));
 

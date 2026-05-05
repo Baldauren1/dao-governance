@@ -25,17 +25,13 @@ contract Treasury is Ownable {
     // Function to send ETH, only callable by the Timelock (owner)
     function transferETH(address payable to, uint256 amount) external onlyOwner {
         require(address(this).balance >= amount, "Treasury: not enough ETH");
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
         require(success, "Treasury: transfer failed");
         emit ETHTransferred(to, amount);
     }
 
     // Function to send ERC20 tokens, also restricted to the Timelock
-    function transferERC20(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyOwner {
+    function transferERC20(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).safeTransfer(to, amount);
         emit ERC20Transferred(token, to, amount);
     }

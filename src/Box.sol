@@ -6,12 +6,11 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // Simple contract to test governance
 // The Timelock contract will be the owner, so only proposals can change the state
 contract Box is Ownable {
-    
     uint256 private _value;
-    uint256 public  feePercentage; // another parameter to change via voting
+    uint256 public feePercentage; // another parameter to change via voting
 
     event ValueChanged(uint256 indexed oldValue, uint256 indexed newValue);
-    event FeeChanged(uint256 indexed oldFee,   uint256 indexed newFee);
+    event FeeChanged(uint256 indexed oldFee, uint256 indexed newFee);
 
     // Pass the Timelock address here to make it the owner
     constructor(address timelockAddress) Ownable(timelockAddress) {

@@ -7,14 +7,13 @@ import "../src/TokenVesting.sol";
 
 // Test file for the governance token and vesting logic
 contract Part1Test is Test {
-
     // Contracts we are testing
     GovernanceToken internal token;
     TokenVesting internal vesting;
 
     // Test addresses
     address internal deployer = makeAddr("deployer");
-    address internal treasury  = makeAddr("treasury");
+    address internal treasury = makeAddr("treasury");
     address internal community = makeAddr("community");
     address internal liquidity = makeAddr("liquidity");
     address internal alice = makeAddr("alice");
@@ -22,7 +21,7 @@ contract Part1Test is Test {
 
     // Private key for testing permit signatures
     uint256 internal constant ALICE_PK = 0xA11CE;
-    address internal aliceSigner; 
+    address internal aliceSigner;
 
     // Amounts for distribution
     uint256 internal constant TOTAL = 100_000_000e18;
@@ -40,12 +39,7 @@ contract Part1Test is Test {
         address predictedVesting = vm.computeCreateAddress(deployer, 1);
 
         // Deploy token - sends funds to vesting, treasury, etc.
-        token = new GovernanceToken(
-            predictedVesting,
-            treasury,
-            community,
-            liquidity
-        );
+        token = new GovernanceToken(predictedVesting, treasury, community, liquidity);
 
         // Deploy vesting contract
         vesting = new TokenVesting(address(token), treasury);
@@ -56,7 +50,7 @@ contract Part1Test is Test {
         vm.stopPrank();
     }
 
-    //  Governance Token Tests 
+    //  Governance Token Tests
 
     // Check if everyone got the right amount of tokens at the start
     function test_01_InitialDistribution() public view {
@@ -115,11 +109,7 @@ contract Part1Test is Test {
         token.delegate(alice);
 
         // Snapshot should still show the old voting power
-        assertEq(
-            token.getPastVotes(community, snapshotBlock),
-            COMM_AMT,
-            "snapshot unchanged after re-delegation"
-        );
+        assertEq(token.getPastVotes(community, snapshotBlock), COMM_AMT, "snapshot unchanged after re-delegation");
     }
 
     // Checking the total supply snapshot
@@ -127,11 +117,7 @@ contract Part1Test is Test {
         uint256 deployBlock = block.number;
         vm.roll(block.number + 5);
 
-        assertEq(
-            token.getPastTotalSupply(deployBlock),
-            TOTAL,
-            "total supply snapshot = 100M"
-        );
+        assertEq(token.getPastTotalSupply(deployBlock), TOTAL, "total supply snapshot = 100M");
     }
 
     // Testing the EIP-2612 permit function (gasless approval)
@@ -140,15 +126,10 @@ contract Part1Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
         uint256 nonce = token.nonces(aliceSigner);
 
-        bytes32 PERMIT_TYPEHASH = keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
-        bytes32 structHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, aliceSigner, bob, permitValue, nonce, deadline)
-        );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 PERMIT_TYPEHASH =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, aliceSigner, bob, permitValue, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
 
@@ -161,31 +142,23 @@ contract Part1Test is Test {
 
     // Make sure permit fails if the time has run out
     function test_09_PermitRevertsOnExpiredDeadline() public {
-        uint256 deadline = block.timestamp - 1; 
+        uint256 deadline = block.timestamp - 1;
         uint256 nonce = token.nonces(aliceSigner);
 
-        bytes32 PERMIT_TYPEHASH = keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
-        bytes32 structHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, aliceSigner, bob, 1e18, nonce, deadline)
-        );
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 PERMIT_TYPEHASH =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, aliceSigner, bob, 1e18, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
 
         vm.expectRevert();
         token.permit(aliceSigner, bob, 1e18, deadline, v, r, s);
     }
 
-    //  Token Vesting Tests 
+    //  Token Vesting Tests
 
     // Helper function to set up a quick schedule for Alice
-    function _createAliceSchedule()
-        internal
-        returns (uint256 amount, uint256 startTime)
-    {
+    function _createAliceSchedule() internal returns (uint256 amount, uint256 startTime) {
         amount = 1_000e18;
         startTime = block.timestamp + 60;
 
@@ -266,7 +239,7 @@ contract Part1Test is Test {
         // Alice should still be able to take the 25% she earned before the revoke
         uint256 aliceBefore = token.balanceOf(alice);
         vm.prank(alice);
-        vesting.release(); 
+        vesting.release();
         assertApproxEqAbs(token.balanceOf(alice) - aliceBefore, amount / 4, 1e18);
     }
 }

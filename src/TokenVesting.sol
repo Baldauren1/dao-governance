@@ -28,16 +28,9 @@ contract TokenVesting is Ownable, ReentrancyGuard {
 
     mapping(address => VestingSchedule) public schedules;
 
-    event ScheduleCreated(
-        address indexed beneficiary,
-        uint256 totalAmount,
-        uint256 startTime
-    );
+    event ScheduleCreated(address indexed beneficiary, uint256 totalAmount, uint256 startTime);
     event TokensReleased(address indexed beneficiary, uint256 amount);
-    event ScheduleRevoked(
-        address indexed beneficiary,
-        uint256 unvestedReturned
-    );
+    event ScheduleRevoked(address indexed beneficiary, uint256 unvestedReturned);
     event RevokeReceiverUpdated(address indexed newReceiver);
 
     constructor(address _token, address _revokeReceiver) Ownable(msg.sender) {
@@ -48,33 +41,19 @@ contract TokenVesting is Ownable, ReentrancyGuard {
     }
 
     // Admin creates a new vesting plan for someone
-    function createSchedule(
-        address beneficiary,
-        uint256 totalAmount,
-        uint256 startTime
-    ) external onlyOwner {
+    function createSchedule(address beneficiary, uint256 totalAmount, uint256 startTime) external onlyOwner {
         require(beneficiary != address(0), "Vesting: zero beneficiary");
         require(totalAmount > 0, "Vesting: amount is zero");
         require(startTime >= block.timestamp, "Vesting: start in past");
-        require(
-            schedules[beneficiary].totalAmount == 0,
-            "Vesting: schedule exists"
-        );
+        require(schedules[beneficiary].totalAmount == 0, "Vesting: schedule exists");
 
         // Make sure the contract actually has enough tokens to cover this
-        require(
-            token.balanceOf(address(this)) >= totalAllocated + totalAmount,
-            "Vesting: insufficient token balance"
-        );
+        require(token.balanceOf(address(this)) >= totalAllocated + totalAmount, "Vesting: insufficient token balance");
 
         totalAllocated += totalAmount;
 
         schedules[beneficiary] = VestingSchedule({
-            totalAmount: totalAmount,
-            startTime: startTime,
-            duration: VESTING_DURATION,
-            released: 0,
-            revoked: false
+            totalAmount: totalAmount, startTime: startTime, duration: VESTING_DURATION, released: 0, revoked: false
         });
 
         emit ScheduleCreated(beneficiary, totalAmount, startTime);
@@ -135,9 +114,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
     }
 
     // Get progress as a number from 0 to 100
-    function vestingProgress(
-        address beneficiary
-    ) external view returns (uint256) {
+    function vestingProgress(address beneficiary) external view returns (uint256) {
         VestingSchedule memory s = schedules[beneficiary];
         if (s.totalAmount == 0 || block.timestamp < s.startTime) return 0;
         if (block.timestamp >= s.startTime + s.duration) return 100;
@@ -145,16 +122,12 @@ contract TokenVesting is Ownable, ReentrancyGuard {
     }
 
     // Returns the whole schedule struct
-    function getSchedule(
-        address beneficiary
-    ) external view returns (VestingSchedule memory) {
+    function getSchedule(address beneficiary) external view returns (VestingSchedule memory) {
         return schedules[beneficiary];
     }
 
     // Internal math for linear vesting calculation
-    function _vestedAmount(
-        VestingSchedule memory s
-    ) internal view returns (uint256) {
+    function _vestedAmount(VestingSchedule memory s) internal view returns (uint256) {
         if (s.totalAmount == 0) return 0;
         if (s.revoked) return s.totalAmount; // totalAmount capped at revoke time
         if (block.timestamp < s.startTime) return 0;
