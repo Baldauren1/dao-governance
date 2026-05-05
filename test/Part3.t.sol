@@ -41,12 +41,7 @@ contract Part3Test is Test {
         );
 
         address[] memory empty = new address[](0);
-        timelock = new TimelockController(
-            TIMELOCK_DELAY,
-            empty,
-            empty,
-            deployer
-        );
+        timelock = new TimelockController(TIMELOCK_DELAY, empty, empty, deployer);
 
         governor = new MyGovernor(token, timelock);
         treasury = new Treasury(address(timelock));
@@ -80,11 +75,7 @@ contract Part3Test is Test {
         assertEq(treasury.owner(), address(timelock), "treasury owner should be timelock");
         assertEq(box.owner(), address(timelock), "box owner should be timelock");
         assertEq(treasury.ethBalance(), TREASURY_ETH_BALANCE, "treasury should hold ETH");
-        assertEq(
-            treasury.tokenBalance(address(token)),
-            TREASURY_GOV_ALLOCATION,
-            "treasury should hold GOV"
-        );
+        assertEq(treasury.tokenBalance(address(token)), TREASURY_GOV_ALLOCATION, "treasury should hold GOV");
     }
 
     function test_NonOwnersCannotCallTreasuryOrBoxDirectly() public {
@@ -106,28 +97,15 @@ contract Part3Test is Test {
     }
 
     function test_EndToEnd_BoxStore42Proposal() public {
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas,
-            string memory description
-        ) = _singleCallProposal(
-            address(box),
-            0,
-            abi.encodeCall(Box.store, (42)),
-            "Part 3: Box.store(42)"
-        );
+        (address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description) =
+            _singleCallProposal(address(box), 0, abi.encodeCall(Box.store, (42)), "Part 3: Box.store(42)");
 
         _runLifecycleWithLogs(targets, values, calldatas, description);
         uint256 storedValue = box.retrieve();
         console.log("7. Verified Box value:");
         console.log(storedValue);
 
-        assertEq(
-            storedValue,
-            42,
-            "governance should update the Box value"
-        );
+        assertEq(storedValue, 42, "governance should update the Box value");
     }
 
     function test_EndToEnd_TreasuryTransfersETH() public {
@@ -135,33 +113,17 @@ contract Part3Test is Test {
         uint256 recipientBefore = recipient.balance;
         uint256 treasuryBefore = address(treasury).balance;
 
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas,
-            string memory description
-        ) = _singleCallProposal(
+        (address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description) = _singleCallProposal(
             address(treasury),
             0,
-            abi.encodeCall(
-                Treasury.transferETH,
-                (payable(recipient), transferAmount)
-            ),
+            abi.encodeCall(Treasury.transferETH, (payable(recipient), transferAmount)),
             "Part 3: Treasury transfer ETH"
         );
 
         _runLifecycleWithLogs(targets, values, calldatas, description);
 
-        assertEq(
-            recipient.balance - recipientBefore,
-            transferAmount,
-            "recipient should receive ETH from treasury"
-        );
-        assertEq(
-            treasuryBefore - address(treasury).balance,
-            transferAmount,
-            "treasury ETH should decrease"
-        );
+        assertEq(recipient.balance - recipientBefore, transferAmount, "recipient should receive ETH from treasury");
+        assertEq(treasuryBefore - address(treasury).balance, transferAmount, "treasury ETH should decrease");
     }
 
     function test_EndToEnd_TreasuryTransfersERC20() public {
@@ -169,73 +131,37 @@ contract Part3Test is Test {
         uint256 recipientBefore = token.balanceOf(recipient);
         uint256 treasuryBefore = token.balanceOf(address(treasury));
 
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas,
-            string memory description
-        ) = _singleCallProposal(
+        (address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description) = _singleCallProposal(
             address(treasury),
             0,
-            abi.encodeCall(
-                Treasury.transferERC20,
-                (address(token), recipient, transferAmount)
-            ),
+            abi.encodeCall(Treasury.transferERC20, (address(token), recipient, transferAmount)),
             "Part 3: Treasury transfer GOV"
         );
 
         _runLifecycleWithLogs(targets, values, calldatas, description);
 
         assertEq(
-            token.balanceOf(recipient) - recipientBefore,
-            transferAmount,
-            "recipient should receive GOV from treasury"
+            token.balanceOf(recipient) - recipientBefore, transferAmount, "recipient should receive GOV from treasury"
         );
-        assertEq(
-            treasuryBefore - token.balanceOf(address(treasury)),
-            transferAmount,
-            "treasury GOV should decrease"
-        );
+        assertEq(treasuryBefore - token.balanceOf(address(treasury)), transferAmount, "treasury GOV should decrease");
     }
 
     function test_EndToEnd_BoxFeeParameterChange() public {
         uint256 newFee = 250;
 
-        (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas,
-            string memory description
-        ) = _singleCallProposal(
-            address(box),
-            0,
-            abi.encodeCall(Box.setFeePercentage, (newFee)),
-            "Part 3: Box fee change"
+        (address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description) = _singleCallProposal(
+            address(box), 0, abi.encodeCall(Box.setFeePercentage, (newFee)), "Part 3: Box fee change"
         );
 
         _runLifecycleWithLogs(targets, values, calldatas, description);
 
-        assertEq(
-            box.feePercentage(),
-            newFee,
-            "governance should update the controlled parameter"
-        );
+        assertEq(box.feePercentage(), newFee, "governance should update the controlled parameter");
     }
 
-    function _singleCallProposal(
-        address target,
-        uint256 value,
-        bytes memory calldata_,
-        string memory description
-    )
+    function _singleCallProposal(address target, uint256 value, bytes memory calldata_, string memory description)
         internal
         pure
-        returns (
-            address[] memory targets,
-            uint256[] memory values,
-            bytes[] memory calldatas,
-            string memory desc
-        )
+        returns (address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory desc)
     {
         targets = new address[](1);
         values = new uint256[](1);
