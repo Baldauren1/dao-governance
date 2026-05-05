@@ -37,7 +37,7 @@ contract Part1Test is Test {
         vm.startPrank(deployer);
 
         // Figure out where the vesting contract will live before deploying it
-        address predictedVesting = computeCreateAddress(deployer, 1);
+        address predictedVesting = vm.computeCreateAddress(deployer, 1);
 
         // Deploy token - sends funds to vesting, treasury, etc.
         token = new GovernanceToken(
