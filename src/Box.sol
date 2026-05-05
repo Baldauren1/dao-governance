@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
-
+//part 2
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 // Simple contract to test governance
