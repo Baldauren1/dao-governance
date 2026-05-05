@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAO Governance dApp</title>
+    <style>
+        :root {
+            --bg: #f7f2e8;
+            --panel: #fffdf8;
+            --panel-alt: #efe4d0;
+            --ink: #1e2a28;
+            --muted: #5f6d68;
+            --line: #d9ccb6;
+            --accent: #0d7a68;
+            --accent-dark: #0a5f51;
+            --danger: #a2452c;
+            --success: #1c7c46;
+            --shadow: 0 14px 36px rgba(36, 39, 33, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Bahnschrift, "Trebuchet MS", sans-serif;
+            background:
+                radial-gradient(circle at top right, rgba(13, 122, 104, 0.16), transparent 22rem),
+                linear-gradient(180deg, #faf5eb 0%, var(--bg) 100%);
+            color: var(--ink);
+        }
+
+        .shell {
+            width: min(1120px, calc(100% - 2rem));
+            margin: 0 auto;
+            padding: 2rem 0 3rem;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #17312c 0%, #214b42 100%);
+            color: #f5efe4;
+            border-radius: 26px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.25rem;
+        }
+
+        .hero h1 {
+            margin: 0 0 0.75rem;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .hero p {
+            margin: 0;
+            max-width: 48rem;
+            color: rgba(245, 239, 228, 0.88);
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1rem;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            margin-bottom: 0.4rem;
+            font-size: 1.2rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .panel p {
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .span-7 { grid-column: span 7; }
+        .span-5 { grid-column: span 5; }
+        .span-12 { grid-column: span 12; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.9rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .field label {
+            font-weight: 700;
+            font-size: 0.88rem;
+            letter-spacing: 0.02em;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #fff;
+            padding: 0.85rem 0.95rem;
+            font: inherit;
+            color: var(--ink);
+        }
+
+        .field input:focus,
+        .field select:focus {
+            outline: 2px solid rgba(13, 122, 104, 0.22);
+            border-color: var(--accent);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        button {
+            border: 0;
+            border-radius: 999px;
+            padding: 0.82rem 1.15rem;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #f5f7f2;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+        }
+
+        .btn-secondary {
+            background: var(--panel-alt);
+            color: var(--ink);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+
+        .stat {
+            background: linear-gradient(180deg, #fff 0%, #fbf5e8 100%);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 0.95rem;
+        }
+
+        .stat span {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat strong {
+            font-size: 1.1rem;
+            word-break: break-word;
+        }
+
+        .status-box {
+            margin-top: 1rem;
+            border-radius: 16px;
+            padding: 0.9rem 1rem;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--muted);
+            min-height: 3.25rem;
+        }
+
+        .status-box.info {
+            border-color: rgba(13, 122, 104, 0.25);
+            background: rgba(13, 122, 104, 0.08);
+            color: var(--ink);
+        }
+
+        .status-box.success {
+            border-color: rgba(28, 124, 70, 0.25);
+            background: rgba(28, 124, 70, 0.09);
+            color: var(--success);
+        }
+
+        .status-box.error {
+            border-color: rgba(162, 69, 44, 0.25);
+            background: rgba(162, 69, 44, 0.09);
+            color: var(--danger);
+        }
+
+        .proposal-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--muted);
+        }
+
+        .proposal-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .proposal-card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 1rem;
+            background: linear-gradient(180deg, #fff 0%, #faf4e8 100%);
+        }
+
+        .proposal-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: flex-start;
+            margin-bottom: 0.65rem;
+        }
+
+        .proposal-id {
+            font-size: 0.78rem;
+            color: var(--muted);
+            word-break: break-all;
+        }
+
+        .badge {
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-active,
+        .badge-succeeded,
+        .badge-executed,
+        .badge-queued {
+            background: rgba(13, 122, 104, 0.12);
+            color: var(--accent-dark);
+        }
+
+        .badge-defeated,
+        .badge-canceled,
+        .badge-expired {
+            background: rgba(162, 69, 44, 0.12);
+            color: var(--danger);
+        }
+
+        .badge-pending {
+            background: rgba(67, 77, 92, 0.12);
+            color: #44505c;
+        }
+
+        .proposal-meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin: 0.85rem 0;
+        }
+
+        .proposal-meta div,
+        .vote-row div {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 0.75rem;
+            background: #fff;
+        }
+
+        .proposal-meta span,
+        .vote-row span {
+            display: block;
+            font-size: 0.76rem;
+            color: var(--muted);
+            margin-bottom: 0.2rem;
+        }
+
+        .vote-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .proposal-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .proposal-controls select {
+            min-width: 10rem;
+        }
+
+        .helper {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .empty {
+            border: 1px dashed var(--line);
+            border-radius: 18px;
+            padding: 1rem;
+            text-align: center;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 920px) {
+            .span-7,
+            .span-5,
+            .span-12 {
+                grid-column: span 12;
+            }
+
+            .form-grid,
+            .stats,
+            .proposal-meta,
+            .vote-row {
+                grid-template-columns: 1fr;
+            }
+
+            .proposal-head {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="hero">
+            <h1>DAO Voting Desk</h1>
+            <p>
+                Minimal frontend for Part 4. Paste your deployed Governance Token and Governor addresses,
+                connect MetaMask, review proposals, delegate voting power, and cast votes directly from the UI.
+            </p>
+        </section>
+
+        <div class="grid">
+            <section class="panel span-7">
+                <h2>Contract Setup</h2>
+                <p>Use the addresses from your Foundry deployment. They are saved locally in the browser for convenience.</p>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="tokenAddress">Governance Token Address</label>
+                        <input id="tokenAddress" type="text" placeholder="0x..." autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label for="governorAddress">Governor Address</label>
+                        <input id="governorAddress" type="text" placeholder="0x..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="saveConfigButton" class="btn-secondary">Save Addresses</button>
+                    <button id="connectButton" class="btn-primary">Connect MetaMask</button>
+                    <button id="refreshButton" class="btn-secondary">Refresh Data</button>
+                </div>
+
+                <div id="statusBox" class="status-box info">
+                    Enter addresses, connect MetaMask, and refresh to load balances and proposals.
+                </div>
+            </section>
+
+            <section class="panel span-5">
+                <h2>Wallet Overview</h2>
+                <p>Part 4 requires token balance, voting power, and delegate visibility.</p>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span>Connected Account</span>
+                        <strong id="accountValue">Not connected</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Network</span>
+                        <strong id="networkValue">Unknown</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Token Balance</span>
+                        <strong id="balanceValue">-</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Voting Power</span>
+                        <strong id="votesValue">-</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Delegate Address</span>
+                        <strong id="delegateValue">-</strong>
+                    </div>
+                    <div class="stat">
+                        <span>Current Block</span>
+                        <strong id="blockValue">-</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel span-12">
+                <h2>Delegate Votes</h2>
+                <p>Use any valid address, or quickly self-delegate to activate your voting power.</p>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="delegateAddress">Delegate To</label>
+                        <input id="delegateAddress" type="text" placeholder="0x..." autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label>Quick Actions</label>
+                        <div class="actions">
+                            <button id="selfDelegateButton" class="btn-secondary">Self-Delegate</button>
+                            <button id="delegateButton" class="btn-primary">Send Delegation</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel span-12">
+                <div class="proposal-toolbar">
+                    <div>
+                        <h2>Proposals</h2>
+                        <p class="helper">Read live proposal states from the Governor and vote For, Against, or Abstain.</p>
+                    </div>
+                    <div class="actions">
+                        <label class="checkbox-row">
+                            <input id="activeOnlyCheckbox" type="checkbox">
+                            Show only active proposals
+                        </label>
+                        <button id="refreshProposalsButton" class="btn-secondary">Reload Proposals</button>
+                    </div>
+                </div>
+
+                <div id="proposalList" class="proposal-list">
+                    <div class="empty">No proposals loaded yet.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js"></script>
+    <script src="./app.js" defer></script>
+</body>
+</html>
