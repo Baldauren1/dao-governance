@@ -4,85 +4,130 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {GovernanceToken} from "../src/GovernanceToken.sol";
+import {TokenVesting} from "../src/TokenVesting.sol";
 import {MyGovernor} from "../src/MyGovernor.sol";
 import {Box} from "../src/Box.sol";
 import {Treasury} from "../src/Treasury.sol";
 
 contract Deploy is Script {
-    uint256 constant TIMELOCK_MIN_DELAY = 2 days;
+    uint256 internal constant TIMELOCK_MIN_DELAY = 2 days;
+    uint256 internal constant DEFAULT_VESTING_OFFSET = 1 days;
 
-    // Placeholder addresses for initial distribution
-    address constant COMMUNITY_AIRDROP = address(0xCAFE);
-    address constant LIQUIDITY_POOL = address(0xBEEF);
+    struct DeploymentConfig {
+        uint256 deployerKey;
+        address communityAirdrop;
+        address liquidityPool;
+        address teamBeneficiary;
+        address vestingAdmin;
+        address revokeReceiver;
+        uint256 teamVestingStart;
+        uint256 treasuryEthSeed;
+    }
 
     GovernanceToken public token;
+    TokenVesting public vesting;
     TimelockController public timelock;
     MyGovernor public governor;
     Box public box;
     Treasury public treasury;
 
     function run() external {
-        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerKey);
+        DeploymentConfig memory cfg = _loadConfig();
+        address deployer = vm.rememberKey(cfg.deployerKey);
 
-        vm.startBroadcast(deployerKey);
+        uint256 currentNonce = vm.getNonce(deployer);
+        address predictedToken = vm.computeCreateAddress(deployer, currentNonce);
+        address predictedVesting = vm.computeCreateAddress(deployer, currentNonce + 1);
+        address predictedTimelock = vm.computeCreateAddress(deployer, currentNonce + 2);
+        address predictedGovernor = vm.computeCreateAddress(deployer, currentNonce + 3);
+        address predictedBox = vm.computeCreateAddress(deployer, currentNonce + 4);
+        address predictedTreasury = vm.computeCreateAddress(deployer, currentNonce + 5);
 
-        // 1. Deploy GovernanceToken with initial supply distribution
-        token = new GovernanceToken(
-            deployer, // Team vesting placeholder
-            deployer, // Initial treasury holder
-            COMMUNITY_AIRDROP,
-            LIQUIDITY_POOL
-        );
-        console.log("GovernanceToken deployed:", address(token));
+        if (cfg.revokeReceiver == address(0)) {
+            cfg.revokeReceiver = predictedTreasury;
+        }
 
-        // 2. Deploy TimelockController (manages proposal execution delay)
+        if (cfg.teamVestingStart == 0) {
+            cfg.teamVestingStart = block.timestamp + DEFAULT_VESTING_OFFSET;
+        }
+
+        console.log("Deployer:", deployer);
+        console.log("Predicted token:", predictedToken);
+        console.log("Predicted vesting:", predictedVesting);
+        console.log("Predicted timelock:", predictedTimelock);
+        console.log("Predicted governor:", predictedGovernor);
+        console.log("Predicted box:", predictedBox);
+        console.log("Predicted treasury:", predictedTreasury);
+
+        vm.startBroadcast(cfg.deployerKey);
+
+        token = new GovernanceToken(predictedVesting, predictedTreasury, cfg.communityAirdrop, cfg.liquidityPool);
+        vesting = new TokenVesting(predictedToken, cfg.revokeReceiver);
+
         address[] memory empty = new address[](0);
-        timelock = new TimelockController(
-            TIMELOCK_MIN_DELAY,
-            empty,
-            empty,
-            deployer // Temporary admin for setup
-        );
-        console.log("Timelock deployed:", address(timelock));
+        timelock = new TimelockController(TIMELOCK_MIN_DELAY, empty, empty, deployer);
 
-        // 3. Deploy the Governor contract
         governor = new MyGovernor(token, timelock);
-        console.log("MyGovernor deployed:", address(governor));
-
-        // 4. Setup Roles within the Timelock
-        bytes32 PROPOSER_ROLE = timelock.PROPOSER_ROLE();
-        bytes32 EXECUTOR_ROLE = timelock.EXECUTOR_ROLE();
-        bytes32 CANCELLER_ROLE = timelock.CANCELLER_ROLE();
-
-        // Grant Governor the ability to propose and cancel
-        timelock.grantRole(PROPOSER_ROLE, address(governor));
-        timelock.grantRole(CANCELLER_ROLE, address(governor));
-
-        // Setting EXECUTOR_ROLE to address(0) allows anyone to execute successful proposals
-        timelock.grantRole(EXECUTOR_ROLE, address(0));
-
-        // 5. Revoke admin role from deployer to ensure decentralization
-        timelock.revokeRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
-        console.log("Admin role revoked from deployer");
-
-        // 6. Deploy target contracts owned by the Timelock
         box = new Box(address(timelock));
         treasury = new Treasury(address(timelock));
-        console.log("Box deployed:", address(box));
-        console.log("Treasury deployed:", address(treasury));
 
-        // 7. Activate voting power for the deployer to enable immediate proposing
-        token.delegate(deployer);
+        _assertPredictedAddress(address(token), predictedToken, "token");
+        _assertPredictedAddress(address(vesting), predictedVesting, "vesting");
+        _assertPredictedAddress(address(timelock), predictedTimelock, "timelock");
+        _assertPredictedAddress(address(governor), predictedGovernor, "governor");
+        _assertPredictedAddress(address(box), predictedBox, "box");
+        _assertPredictedAddress(address(treasury), predictedTreasury, "treasury");
+
+        uint256 teamAllocation = token.balanceOf(address(vesting));
+        vesting.createSchedule(cfg.teamBeneficiary, teamAllocation, cfg.teamVestingStart);
+
+        if (cfg.vestingAdmin != deployer) {
+            vesting.transferOwnership(cfg.vestingAdmin);
+        }
+
+        bytes32 proposerRole = timelock.PROPOSER_ROLE();
+        bytes32 executorRole = timelock.EXECUTOR_ROLE();
+        bytes32 cancellerRole = timelock.CANCELLER_ROLE();
+
+        timelock.grantRole(proposerRole, address(governor));
+        timelock.grantRole(cancellerRole, address(governor));
+        timelock.grantRole(executorRole, address(0));
+        timelock.revokeRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
+        if (cfg.treasuryEthSeed > 0) {
+            (bool success,) = address(treasury).call{value: cfg.treasuryEthSeed}("");
+            require(success, "Treasury seed failed");
+        }
 
         vm.stopBroadcast();
 
         console.log("\n--- Deployment Summary ---");
         console.log("GovernanceToken :", address(token));
-        console.log("Timelock :", address(timelock));
-        console.log("MyGovernor :", address(governor));
-        console.log("Box :", address(box));
-        console.log("Treasury :", address(treasury));
+        console.log("TokenVesting    :", address(vesting));
+        console.log("Timelock        :", address(timelock));
+        console.log("MyGovernor      :", address(governor));
+        console.log("Box             :", address(box));
+        console.log("Treasury        :", address(treasury));
+        console.log("Team beneficiary:", cfg.teamBeneficiary);
+        console.log("Vesting admin   :", vesting.owner());
+        console.log("Revoke receiver :", cfg.revokeReceiver);
+        console.log("Vesting start   :", cfg.teamVestingStart);
+        console.log("Treasury ETH    :", address(treasury).balance);
         console.log("--------------------------\n");
+    }
+
+    function _loadConfig() internal view returns (DeploymentConfig memory cfg) {
+        cfg.deployerKey = vm.envUint("PRIVATE_KEY");
+        cfg.communityAirdrop = vm.envAddress("COMMUNITY_AIRDROP");
+        cfg.liquidityPool = vm.envAddress("LIQUIDITY_POOL");
+        cfg.teamBeneficiary = vm.envAddress("TEAM_BENEFICIARY");
+        cfg.vestingAdmin = vm.envOr("VESTING_ADMIN", vm.addr(cfg.deployerKey));
+        cfg.revokeReceiver = vm.envOr("REVOKE_RECEIVER", address(0));
+        cfg.teamVestingStart = vm.envOr("TEAM_VESTING_START", uint256(0));
+        cfg.treasuryEthSeed = vm.envOr("TREASURY_ETH_SEED", uint256(0));
+    }
+
+    function _assertPredictedAddress(address actual, address predicted, string memory label) internal pure {
+        require(actual == predicted, string.concat("Unexpected ", label, " address"));
     }
 }
