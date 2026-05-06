@@ -134,7 +134,7 @@ contract GovernorTest is Test {
         governor.execute(targets, values, calldatas, descHash);
     }
 
-    //  TESTS (13 тестов)
+    //  TESTS 
 
     function test_InitialParameters() public view {
         assertEq(governor.votingDelay(), VOTING_DELAY);
